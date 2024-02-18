@@ -4,21 +4,22 @@ using Microsoft.EntityFrameworkCore;
 using TodoApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddDbContext<DatabaseContext>(options => options.UseSqlite("Data Source=database.db"));
+builder.Services.AddOutputCache(options =>
+{
+    options.AddBasePolicy(builder => builder.Expire(TimeSpan.FromSeconds(10)));
+});
 
 var app = builder.Build();
-
-var items = Enumerable.Range(1, 1000).Select(n => new { Id = n, Name = $"Item {n}" }).ToList();
+app.UseOutputCache();
 
 app.MapGet("/", () => "Hello World!");
-app.MapGet("/items", () => items);
-app.MapGet("/rura/times", (CancellationToken token) =>
+app.MapGet("/rura/times", (DatabaseContext db, CancellationToken token) =>
 {
-    using var db = new DatabaseContext();
     return db.SplitTimes.Where(s => s.RaceId == 15).ToListAsync(token);
 });
-app.MapGet("/rura/results", async (CancellationToken token) =>
+app.MapGet("/rura/results", async (DatabaseContext db, CancellationToken token) =>
 {
-    using var db = new DatabaseContext();
     var raceId = 15;
     var classificationId = 31;
 
@@ -104,8 +105,7 @@ app.MapGet("/rura/results", async (CancellationToken token) =>
             Disqualification = disqualifications.GetValueOrDefault(p.BibNumber),
             TimePenalties = timePenalties[p.BibNumber].ToList() ?? new List<TimePenalty>(),
             TotalTimePenalty = (timePenalties[p.BibNumber] ?? new List<TimePenalty>()).Sum(curr => curr.Time)
-        })
-        .ToList();
+        }).ToList();
 
     var times = playersWithTimes.Where(p => p.Disqualification == null).ToList();
 
@@ -119,8 +119,7 @@ app.MapGet("/rura/results", async (CancellationToken token) =>
             Result = int.MaxValue,
             AgeCategory = null,
             OpenCategory = null
-        })
-        .ToList();
+        }).ToList(); ;
 
     var absentPlayers = times
         .Where(t => t.Absences.ContainsKey(startTimingPoint!.Id) || t.Absences.ContainsKey(endTimingPoint!.Id))
@@ -132,8 +131,7 @@ app.MapGet("/rura/results", async (CancellationToken token) =>
             Result = int.MaxValue,
             AgeCategory = null,
             OpenCategory = null
-        })
-        .ToList();
+        }).ToList(); ;
 
     var results = times
         .Where(t => t.Times.ContainsKey(startTimingPoint!.Id.ToString()) && t.Times.ContainsKey(endTimingPoint!.Id.ToString()))
@@ -143,16 +141,14 @@ app.MapGet("/rura/results", async (CancellationToken token) =>
             Finish = t.Times[endTimingPoint.Id.ToString()]["0"],
             Result = t.Times[endTimingPoint.Id.ToString()]["0"] - t.Times[startTimingPoint.Id.ToString()]["0"] + t.TotalTimePenalty,
             InvalidState = (string)null
-        })
-        .ToList();
+        }).ToList(); ;
 
     var resultsWithCategories = results
         .Select(r => r with
         {
             AgeCategory = classification.Categories.FirstOrDefault(c => c.MinAge != null && c.MaxAge != null && c.MinAge <= r.Age && c.MaxAge >= r.Age && (c.Gender == null || c.Gender == r.Gender)),
             OpenCategory = classification.Categories.FirstOrDefault(c => c.MinAge == null && c.MaxAge == null && c.Gender != null && c.Gender == r.Gender)
-        })
-        .ToList();
+        }).ToList(); ;
 
     var playersByAgeCategories = resultsWithCategories
         .Where(r => r.AgeCategory != null)
@@ -172,8 +168,7 @@ app.MapGet("/rura/results", async (CancellationToken token) =>
         {
             AgeCategoryPlace = r.AgeCategory != null ? playersByAgeCategories[r.AgeCategory.Id.ToString()].IndexOf(r) + 1 : (int?)null,
             OpenCategoryPlace = r.OpenCategory != null ? playersByOpenCategories[r.OpenCategory.Id.ToString()].IndexOf(r) + 1 : (int?)null
-        })
-        .ToList();
+        }).ToList(); ;
 
     var winningResult = sorted.FirstOrDefault()?.Result;
 

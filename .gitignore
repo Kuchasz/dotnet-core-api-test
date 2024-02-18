@@ -17,6 +17,9 @@
 # .NET Scaffolding
 ScaffoldingReadMe.txt
 
+# Example db file
+database.db
+
 # Visual Studio files
 *.backup
 *.bak

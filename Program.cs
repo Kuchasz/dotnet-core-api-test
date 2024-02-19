@@ -5,13 +5,13 @@ using TodoApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<DatabaseContext>(options => options.UseSqlite("Data Source=database.db"));
-builder.Services.AddOutputCache(options =>
-{
-    options.AddBasePolicy(builder => builder.Expire(TimeSpan.FromSeconds(10)));
-});
+// builder.Services.AddOutputCache(options =>
+// {
+//     options.AddBasePolicy(builder => builder.Expire(TimeSpan.FromSeconds(10)));
+// });
 
 var app = builder.Build();
-app.UseOutputCache();
+// app.UseOutputCache();
 
 app.MapGet("/", () => "Hello World!");
 app.MapGet("/rura/times", (DatabaseContext db, CancellationToken token) =>
@@ -22,6 +22,9 @@ app.MapGet("/rura/results", async (DatabaseContext db, CancellationToken token) 
 {
     var raceId = 15;
     var classificationId = 31;
+
+    var sw = new System.Diagnostics.Stopwatch();
+    sw.Start();
 
     var allPlayers = await db
         .Players
@@ -68,6 +71,9 @@ app.MapGet("/rura/results", async (DatabaseContext db, CancellationToken token) 
         .Where(c => c.RaceId == raceId && c.Id == classificationId)
         .Include(c => c.Categories)
         .SingleAsync(token);
+
+    sw.Stop();
+
 
     var raceDateStart = race!.date;
 

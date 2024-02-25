@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using TodoApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddDbContext<DatabaseContext>(options => options.UseSqlite("Data Source=database.db"), ServiceLifetime.Singleton);
+builder.Services.AddDbContext<DatabaseContext>(options => options.UseSqlite("Data Source=database.db"));
 
 // builder.Services.AddOutputCache(options =>
 // {
@@ -146,7 +146,7 @@ app.MapGet("/rura/results", async (DatabaseContext db, CancellationToken token) 
             Start = t.Times[startTimingPoint.Id.ToString()]["0"],
             Finish = t.Times[endTimingPoint.Id.ToString()]["0"],
             Result = t.Times[endTimingPoint.Id.ToString()]["0"] - t.Times[startTimingPoint.Id.ToString()]["0"] + t.TotalTimePenalty,
-            InvalidState = (string)null
+            InvalidState = null
         }).ToList(); ;
 
     var resultsWithCategories = results
@@ -185,6 +185,7 @@ app.MapGet("/rura/results", async (DatabaseContext db, CancellationToken token) 
         })
         .ToList();
 
+    GC.Collect();
     return result;
 });
 

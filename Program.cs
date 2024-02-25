@@ -1,16 +1,22 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using TodoApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<DatabaseContext>(options => options.UseSqlite("Data Source=database.db"));
+
 // builder.Services.AddOutputCache(options =>
 // {
 //     options.AddBasePolicy(builder => builder.Expire(TimeSpan.FromSeconds(10)));
 // });
 
 var app = builder.Build();
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
 // app.UseOutputCache();
 
 app.MapGet("/", () => "Hello World!");
@@ -22,9 +28,6 @@ app.MapGet("/rura/results", async (DatabaseContext db, CancellationToken token) 
 {
     var raceId = 15;
     var classificationId = 31;
-
-    var sw = new System.Diagnostics.Stopwatch();
-    sw.Start();
 
     var allPlayers = await db
         .Players
@@ -71,9 +74,6 @@ app.MapGet("/rura/results", async (DatabaseContext db, CancellationToken token) 
         .Where(c => c.RaceId == raceId && c.Id == classificationId)
         .Include(c => c.Categories)
         .SingleAsync(token);
-
-    sw.Stop();
-
 
     var raceDateStart = race!.date;
 

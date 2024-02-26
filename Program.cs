@@ -31,33 +31,46 @@ app.MapGet("/rura/results", async (DatabaseContext db, CancellationToken token) 
 
     var allPlayers = await db
         .Players
+        .AsNoTracking()
         .Where(p => p.RaceId == raceId && p.ClassificationId == classificationId)
         .Include(p => p.Absences)
         .Include(p => p.PlayerProfile)
         .ToListAsync(token);
 
-    var splitTimes = await db.SplitTimes
+    var splitTimes = await db
+        .SplitTimes
+        .AsNoTracking()
         .Where(st => st.RaceId == raceId && st.Player.ClassificationId == classificationId)
         .ToListAsync(token);
 
-    var manualSplitTimes = await db.ManualSplitTimes
+    var manualSplitTimes = await db
+        .ManualSplitTimes
+        .AsNoTracking()
         .Where(st => st.RaceId == raceId && st.Player.ClassificationId == classificationId)
         .ToListAsync(token);
 
-    var disqualifications = await db.Disqualifications
+    var disqualifications = await db
+        .Disqualifications
+        .AsNoTracking()
         .Where(d => d.RaceId == raceId)// && d.Player.ClassificationId == classificationId)
         .ToDictionaryAsync(d => d.BibNumber, token);
 
-    var timePenalties = (await db.TimePenalties
+    var timePenalties = (await db
+        .TimePenalties
+        .AsNoTracking()
         .Where(p => p.RaceId == raceId)// && p.Player.ClassificationId == classificationId)
         .ToListAsync(token))
         .ToLookup(p => p.BibNumber);
 
-    var unorderTimingPoints = await db.TimingPoints
+    var unorderTimingPoints = await db
+        .TimingPoints
+        .AsNoTracking()
         .Where(tp => tp.RaceId == raceId)
         .ToListAsync(token);
 
-    var timingPointsOrder = await db.TimingPointOrders
+    var timingPointsOrder = await db
+        .TimingPointOrders
+        .AsNoTracking()
         .Where(to => to.RaceId == raceId)
         .SingleAsync(token);
 
@@ -65,12 +78,16 @@ app.MapGet("/rura/results", async (DatabaseContext db, CancellationToken token) 
         .Select(p => unorderTimingPoints.FirstOrDefault(tp => tp.Id == p))
         .ToList();
 
-    var race = await db.Races
+    var race = await db
+        .Races
+        .AsNoTracking()
         .Where(r => r.Id == raceId)
         .Select(r => new { date = r.Date })
         .SingleAsync(token);
 
-    var classification = await db.Classifications
+    var classification = await db
+        .Classifications
+        .AsNoTracking()
         .Where(c => c.RaceId == raceId && c.Id == classificationId)
         .Include(c => c.Categories)
         .SingleAsync(token);

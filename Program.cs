@@ -24,10 +24,8 @@ app.MapGet("/rura/times", (DatabaseContext db, CancellationToken token) =>
 {
     return db.SplitTimes.Where(s => s.RaceId == 15).ToListAsync(token);
 });
-app.MapGet("/rura/results", async (CancellationToken token) =>
+app.MapGet("/rura/results", async (DatabaseContext db, CancellationToken token) =>
 {
-    DatabaseContext db = new();
-    
     var raceId = 15;
     var classificationId = 31;
 
@@ -93,6 +91,8 @@ app.MapGet("/rura/results", async (CancellationToken token) =>
         .Where(c => c.RaceId == raceId && c.Id == classificationId)
         .Include(c => c.Categories)
         .SingleAsync(token);
+
+    await db.DisposeAsync();
 
     var raceDateStart = race!.date;
 
@@ -209,6 +209,7 @@ app.MapGet("/rura/results", async (CancellationToken token) =>
             Gap = winningResult != null && s.Result != null ? s.Result - winningResult : (int?)null
         })
         .ToList();
+
 
     return result;
 });

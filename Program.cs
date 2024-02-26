@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using TodoApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddDbContext<DatabaseContext>(options => options.UseSqlite("Data Source=database.db"));
+builder.Services.AddDbContext<DatabaseContext>(options => options.UseSqlite("Data Source=database.db"), ServiceLifetime.Scoped);
 
 // builder.Services.AddOutputCache(options =>
 // {

@@ -24,10 +24,8 @@ app.MapGet("/rura/times", (DatabaseContext db, CancellationToken token) =>
 {
     return db.SplitTimes.Where(s => s.RaceId == 15).ToListAsync(token);
 });
-app.MapGet("/rura/results", async (CancellationToken token) =>
+app.MapGet("/rura/results", async (DatabaseContext db, CancellationToken token) =>
 {
-    var db = new DatabaseContext();
-
     var raceId = 15;
     var classificationId = 31;
 

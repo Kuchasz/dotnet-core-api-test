@@ -81,13 +81,16 @@ app.MapGet("/rura/results", async (DatabaseContext db, CancellationToken token) 
     var endTimingPoint = timingPoints.Last();
 
     var splitTimesMap = splitTimes
-        .Select(st => new KeyValuePair<string, long>($"{st.BibNumber}.{st.TimingPointId}.{st.Lap}", (int)st.Time));
+        .Select(st => new KeyValuePair<string, long>($"{st.BibNumber}.{st.TimingPointId}.{st.Lap}", (int)st.Time))
+        .ToList();
 
     var manualSplitTimesMap = manualSplitTimes
-        .Select(st => new KeyValuePair<string, long>($"{st.BibNumber}.{st.TimingPointId}.{st.Lap}", (int)st.Time!));
+        .Select(st => new KeyValuePair<string, long>($"{st.BibNumber}.{st.TimingPointId}.{st.Lap}", (int)st.Time!))
+        .ToList();
 
     var startTimesMap = allPlayers
-        .Select(p => new KeyValuePair<string, long>($"{p.BibNumber}.{startTimingPoint.Id}.0", raceDateStart + p.StartTime!.Value));
+        .Select(p => new KeyValuePair<string, long>($"{p.BibNumber}.{startTimingPoint.Id}.0", raceDateStart + p.StartTime!.Value))
+        .ToList();
 
     var allTimesMap = Utils.ConvertToNestedDictionary(startTimesMap.Concat(splitTimesMap).Concat(manualSplitTimesMap).ToArray());
 
@@ -108,9 +111,10 @@ app.MapGet("/rura/results", async (DatabaseContext db, CancellationToken token) 
             Disqualification = disqualifications.GetValueOrDefault(p.BibNumber),
             TimePenalties = timePenalties[p.BibNumber].ToList() ?? new List<TimePenalty>(),
             TotalTimePenalty = (timePenalties[p.BibNumber] ?? new List<TimePenalty>()).Sum(curr => curr.Time)
-        });
+        })
+        .ToList();
 
-    var times = playersWithTimes.Where(p => p.Disqualification == null);
+    var times = playersWithTimes.Where(p => p.Disqualification == null).ToList();
 
     var disqualifiedPlayers = playersWithTimes
         .Where(d => d.Disqualification != null)
@@ -122,7 +126,8 @@ app.MapGet("/rura/results", async (DatabaseContext db, CancellationToken token) 
             Result = int.MaxValue,
             AgeCategory = null,
             OpenCategory = null
-        });
+        })
+        .ToList();
 
     var absentPlayers = times
         .Where(t => t.Absences.ContainsKey(startTimingPoint!.Id) || t.Absences.ContainsKey(endTimingPoint!.Id))
@@ -134,7 +139,8 @@ app.MapGet("/rura/results", async (DatabaseContext db, CancellationToken token) 
             Result = int.MaxValue,
             AgeCategory = null,
             OpenCategory = null
-        });
+        })
+        .ToList();
 
     var results = times
         .Where(t => t.Times.ContainsKey(startTimingPoint!.Id.ToString()) && t.Times.ContainsKey(endTimingPoint!.Id.ToString()))
@@ -144,14 +150,16 @@ app.MapGet("/rura/results", async (DatabaseContext db, CancellationToken token) 
             Finish = t.Times[endTimingPoint.Id.ToString()]["0"],
             Result = t.Times[endTimingPoint.Id.ToString()]["0"] - t.Times[startTimingPoint.Id.ToString()]["0"] + t.TotalTimePenalty,
             InvalidState = null
-        });
+        })
+        .ToList();
 
     var resultsWithCategories = results
         .Select(r => r with
         {
             AgeCategory = classification.Categories.FirstOrDefault(c => c.MinAge != null && c.MaxAge != null && c.MinAge <= r.Age && c.MaxAge >= r.Age && (c.Gender == null || c.Gender == r.Gender)),
             OpenCategory = classification.Categories.FirstOrDefault(c => c.MinAge == null && c.MaxAge == null && c.Gender != null && c.Gender == r.Gender)
-        });
+        })
+        .ToList();
 
     var playersByAgeCategories = resultsWithCategories
         .Where(r => r.AgeCategory != null)
@@ -171,7 +179,8 @@ app.MapGet("/rura/results", async (DatabaseContext db, CancellationToken token) 
         {
             AgeCategoryPlace = r.AgeCategory != null ? playersByAgeCategories[r.AgeCategory.Id.ToString()].IndexOf(r) + 1 : (int?)null,
             OpenCategoryPlace = r.OpenCategory != null ? playersByOpenCategories[r.OpenCategory.Id.ToString()].IndexOf(r) + 1 : (int?)null
-        });
+        })
+        .ToList();
 
     var winningResult = sorted.FirstOrDefault()?.Result;
 
